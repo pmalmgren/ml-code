@@ -4,12 +4,12 @@ import scipy as sp
 import numpy as np
 
 # Initialize data
+# dt is a data container containing rows/labels
 
-trainingExamples = np.zeros((15000,16),dtype=np.int8)
-trainingLabels = []
+dt = np.dtype([('label',np.str_,1), ('data',np.int16, (16,))])
 
-testExamples = np.zeros((5000,16),dtype=np.int16)
-testLabels = []
+testData = np.zeros((5000,1),dt)
+trainData = np.zeros((15000,1),dt)
 
 counter = 0
 
@@ -19,13 +19,14 @@ with open('letter-recognition.data') as f:
     content = f.readline()
     content = content.split(',')
     
-    label = content.pop()
-    data = np.array(content,dtype=np.int16)    
+    label = content.pop(0)
+    data = np.int16(content)
 
-    if counter <= 14999:
-        trainingExamples[counter,:] = data
-        trainingLabels[counter] = label
+    if counter < 15000:
+        trainData.put(counter,[(label,data)])
     else:
-        testExamples[counter-15000,:] = data
-        testLabels[counter] = label;
+        testData.put(counter-15000,[(label,data)])
+    
+    counter = counter + 1
         
+print "Success!"
