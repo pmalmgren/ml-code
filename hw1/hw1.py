@@ -1,3 +1,7 @@
 #!/usr/bin/python2
 
-print "hello!\n"
+# Read in data
+
+with open('letter-recognition.data') as f:
+	content = f.readline();
+	
