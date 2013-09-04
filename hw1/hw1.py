@@ -6,7 +6,7 @@ import numpy as np
 # Initialize data
 # dt is a data container containing rows/labels
 
-dt = np.dtype([('label',np.str_, 1), ('data',np.int16, (16,))])
+dt = np.dtype([('labels',np.str_, 1), ('data',np.int16, (16,))])
 
 testData = np.zeros((5000,1),dt)
 trainData = np.zeros((15000,1),dt)
