@@ -27,6 +27,7 @@ def knn(n,k,x,y):
     
     for item in knn:
         # count occurences of each item
+        # ties are broken based on which occurs first
         if knn.count(item) > maxCount:
             maxCount = knn.count(item)
             classifiedLabel = item[0]

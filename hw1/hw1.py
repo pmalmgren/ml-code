@@ -2,6 +2,7 @@
 
 import numpy as np
 import dist
+import time
 
 def main():
     # Initialize data
@@ -30,9 +31,23 @@ def main():
             
             counter = counter + 1
          # end for line in f
-    # end with open()
+    # end with open
+        
+    t1 = time.time()
+    dist.knn(9000,7,trainData,y)
+    t2 = time.time()
+    print '%s took %0.3f ms' % ('knn', (t2-t1)*1000.0)    
     
+    errorCount = 0
     
+    for item in testData:
+        prediction = dist.knn(9000,7,trainData,item)
+        
+        if not(prediction.__eq__(item[0][0])):
+            errorCount = errorCount + 1
+            
+        # end if not prediction.__eq__
+    # end for item in data
         
 
 if __name__ == "__main__":
