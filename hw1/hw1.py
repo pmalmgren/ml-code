@@ -3,6 +3,7 @@
 import numpy as np
 import dist
 import time
+import random
 
 def main():
     # Initialize data
@@ -32,22 +33,33 @@ def main():
             counter = counter + 1
          # end for line in f
     # end with open
-        
+    
+    n = 9000
+    
+    sampleData = trainData[random.sample(range(15000),n)]
+    
     t1 = time.time()
-    dist.knn(9000,7,trainData,y)
+    dist.knn(7,sampleData,testData[0])
     t2 = time.time()
     print '%s took %0.3f ms' % ('knn', (t2-t1)*1000.0)    
     
-    errorCount = 0
+    t1 = time.time()
+    minSet = dist.condense(trainData)
+    t2 = time.time()
+    print '%s took %0.3f ms' % ('condensing', (t2-t1)*1000.0) 
+
+    print "minset length: %d \n" % (len(minSet))      
     
-    for item in testData:
-        prediction = dist.knn(9000,7,trainData,item)
-        
-        if not(prediction.__eq__(item[0][0])):
-            errorCount = errorCount + 1
-            
-        # end if not prediction.__eq__
-    # end for item in data
+#    errorCount = 0
+#    
+#    for item in testData:
+#        prediction = dist.knn(9000,7,trainData,item)
+#        
+#        if not(prediction.__eq__(item[0][0])):
+#            errorCount = errorCount + 1
+#            
+#        # end if not prediction.__eq__
+#    # end for item in data
         
 
 if __name__ == "__main__":
