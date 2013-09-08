@@ -28,16 +28,21 @@ def knn(k,sampleData,y):
     maxCount = 0
     classifiedLabel = ''
     
-    if k > 1:
-        for item in knn:
-            # count occurences of each item
-            # ties are broken based on which occurs first
-            if knn.count(item) > maxCount:
-                maxCount = knn.count(item)
-                classifiedLabel = item[0]
-        # end for item in knn
-    else:
-        classifiedLabel = knn[0][0]
+    if type(k) is list:    
+        print "shup"
+
+
+    else:    
+        if k > 1:
+            for item in knn:
+                # count occurences of each item
+                # ties are broken based on which occurs first
+                if knn.count(item) > maxCount:
+                    maxCount = knn.count(item)
+                    classifiedLabel = item[0]
+            # end for item in knn
+        else:
+            classifiedLabel = knn[0][0]
             
     return classifiedLabel
     
@@ -69,7 +74,7 @@ def condense(trainData):
                 if label != trainData[i][0][0]:
                     print "Error. Correct label: %s Classified label: %s" % (trainData[i][0][0],label)                    
                     transfers = transfers + 1
-                    minSet[i] = True;
+                    minSet[i] = True
                     
                # newIndices.remove(item)
             # end if label != trainData[item][0][0]
