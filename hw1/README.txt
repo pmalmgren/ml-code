@@ -21,7 +21,6 @@ matplotlib - https://www.matplotlib.org/
 	Contains a text version of all the data
 * figures/
 	Individual confusion matrix images
-	Format: knn[# of samples][# of neighbors].png
 	
 == Other ===
 Should run in an IDE
