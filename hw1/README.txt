@@ -17,6 +17,8 @@ matplotlib - https://www.matplotlib.org/
 	Produces figures/data for the report
 * report.pdf
 	Report as per asignment requirements
+* confmatrix.pdf
+	Contains confusion matrices for all experiments
 * expdata.txt
 	Contains a text version of all the data
 * figures/
