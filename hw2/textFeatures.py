@@ -12,6 +12,7 @@ import re
 """
 Given a corpus returns features,
 a list of tuples with ('word', frequency)
+in ascending order
 """
 
 def getFeatures(corpus):
@@ -20,12 +21,15 @@ def getFeatures(corpus):
     wordDict = dict()
     
     for item in corpus:
+        item = item.split('\t')
+        text = item[1]
         # sanitize the text        
-        item = item.replace('\n','')
-        itemText = sanitize.sub(' ',item)
-        itemText = itemText.strip()
+        text = text.replace('\n','')
+        text = sanitize.sub(' ',text)
+        text = text.strip()
+        text = text.lower()
         
-        for word in itemText.split():
+        for word in text.split():
             if word in wordDict:
                 wordDict[word] = wordDict[word] + 1
             else:
@@ -38,7 +42,23 @@ def getFeatures(corpus):
 
 """
 Given a corpus and a word dictionary,
-compute a feature vector for each example
+compute a feature vector for each example class
 """
 def vectorize(corpus, words):
+    sanitize = re.compile('[\W0-9]')
     
+    spam = []
+    ham = []
+    
+    for item in corpus:
+        item = item.split('\t')
+        tag = item[0]
+        text = item[1]
+        # sanitize the text        
+        text = text.replace('\n','')
+        text = sanitize.sub(' ',text)
+        text = text.strip()
+        text = text.lower()
+        
+        
+        
