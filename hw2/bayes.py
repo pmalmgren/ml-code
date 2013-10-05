@@ -65,3 +65,22 @@ def trainClassifier(spam,ham,wordDict):
 		probTable[word]['ham'] = hamBins
 		
 	return (probTable,pSpam,pHam)
+
+def classify(probTable,pSpam,pHam,example):
+	
+	for item in probTable:
+		if item in example.keys():
+			if example[item] > len(probTable[item]['spam']):
+				pSpam = pSpam * probTable[item]['spam'][-1]
+				pHam = pHam * probTable[item]['ham'][-1]
+			else:
+				pSpam = pSpam * probTable[item]['spam'][example[item]-1]
+				pHam = pHam * probTable[item]['ham'][example[item]-1]
+		else:
+			pSpam = pSpam * (1-sum(probTable[item]['spam']))
+			pHam = pHam * (1-sum(probTable[item]['ham']))
+
+	if pHam >= pSpam:
+		return "ham"
+	else:
+		return "spam"
