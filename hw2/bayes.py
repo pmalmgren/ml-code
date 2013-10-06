@@ -11,6 +11,7 @@ from scipy.stats import itemfreq
 import numpy as np
 
 def trainClassifier(spam,ham,wordDict):
+	# weights for virtual examples
 	vPrior = lambda nc,n,p: (nc + 1/p)/(n+1)
 
 	pSpam = float(len(spam))/(len(spam)+len(ham))
@@ -66,10 +67,10 @@ def trainClassifier(spam,ham,wordDict):
 		
 	return (probTable,pSpam,pHam)
 
-def classify(probTable,pSpam,pHam,example):
+def classify(probTable,pSpam,pHam,example,lookup):
 	
-	for item in probTable:
-		if item in example.keys():
+	for item in lookup:
+		if item in example:
 			if example[item] > len(probTable[item]['spam']):
 				pSpam = pSpam * probTable[item]['spam'][-1]
 				pHam = pHam * probTable[item]['ham'][-1]

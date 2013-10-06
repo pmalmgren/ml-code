@@ -8,6 +8,7 @@ import bayes
 import textFeatures
 import random
 import pickle
+import time
 
 def main():
 	with open('data/SMSSpamCollection') as input_file:
@@ -23,9 +24,9 @@ def main():
 	indices = random.sample(xrange(len(text)),len(text))
 	randomData = [text[i] for i in indices]
 	stride = len(randomData)/5
-	randomxSlices = [[],[],[],[],[]]
+	randomSlices = [[],[],[],[],[]]
 	for i in range(1,len(randomData)-1,stride+1):
-		randomxSlices[i/stride] = (randomData[i-1:i+stride-1]) 	
+		randomSlices[i/stride] = (randomData[i-1:i+stride-1]) 	
 	
 	# iterate through all the xSlices and perform training/classification
 	for xSlice in range(5):
@@ -51,16 +52,20 @@ def main():
 			trainSpam,trainHam = textFeatures.vectorize(trainSet,wordDict)
 			testSpam,testHam = textFeatures.vectorize(testSet,wordDict)
    
+			start = time.clock()
 			probTable,pSpam,pHam = bayes.trainClassifier(trainSpam,trainHam,wordDict)	
+			print "Train: %f" % (time.clock() - start)
 
 			for item in testSpam:
-				prediction = (bayes.classify(probTable,pSpam,pHam,item))
+				start = time.clock()
+				prediction = (bayes.classify(probTable,pSpam,pHam,item,wordDict))
+				print "Test: %f" % (time.clock() - start)
 				if prediction == 'spam':
 					tp = tp + 1
 				else:
 					fn = fn + 1
 			for item in testHam:
-				prediction = (bayes.classify(probTable,pSpam,pHam,item))
+				prediction = (bayes.classify(probTable,pSpam,pHam,item,wordDict))
 				if prediction == 'ham':
 					tn = tn + 1
 				else:
@@ -68,7 +73,7 @@ def main():
 			
 			result = {'tp': tp, 'fp': fp, fn: 'fn', 'tn': tn}
 			# write results to temporary file
-			fName = 'output/expcutoff%dxSlice%d' % (cutoff,xSlice)
-			pickle.dump(result,open(fName,'w'))
+			fName = 'output/expcutoff%dslice%d' % (cutoff,xSlice)
+			#pickle.dump(result,open(fName,'w'))
 if __name__ == '__main__':
 	main()
