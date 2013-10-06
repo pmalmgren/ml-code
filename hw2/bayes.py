@@ -30,25 +30,26 @@ def trainClassifier(spam,ham,wordDict):
 	# sum(list) = number of occurrences of the word in total (irrelevant)
 	
 	for example in spam:
-		for feature in example.keys():
-			spamTable[feature].append(example[feature])
+		for i in range(len(example)):
+			if example[i] != 0:
+				spamTable[wordDict[i]].append(example[i])
 
 	for example in ham:
-		for feature in example.keys():
-			hamTable[feature].append(example[feature])	
+		for i in range(len(example)):
+			if example[i] != 0:
+				spamTable[wordDict[i]].append(example[i])
 
 	# assume each word is equally likely
 	p = float(len(wordDict))
 	
-	probTable = dict()
+	probTable = list()
 
-	for word in wordDict:
-		probTable[word] = dict()
-		
-		if len(spamTable[word]) == 0: 
+	for i in range(len(wordDict)):
+		word = wordDict[i]	
+		if len(spamTable[wordDict[i]]) == 0: 
 			spamBins = vPrior(np.zeros(np.shape(itemfreq(hamTable[word])[:,1]),dtype=np.float),float(len(spam)),p)
 			hamBins = vPrior(itemfreq(hamTable[word])[:,1],float(len(ham)),p)
-		elif len(hamTable[word]) == 0:
+		elif len(hamTable[wordDict[i]]) == 0:
 			hamBins = vPrior(np.zeros(np.shape(itemfreq(spamTable[word])[:,1]),dtype=np.float),float(len(ham)),p)
 			spamBins = vPrior(itemfreq(spamTable[word])[:,1],float(len(spam)),p)
 		else:
@@ -62,24 +63,24 @@ def trainClassifier(spam,ham,wordDict):
 			hamBins = vPrior(hamBins,float(len(ham)),p)
 			spamBins = vPrior(spamBins,float(len(spam)),p)	
 
-		probTable[word]['spam'] = spamBins
-		probTable[word]['ham'] = hamBins
+		ref = {'spam': spamBins, 'ham': hamBins}
+		probTable.append(ref)
 		
 	return (probTable,pSpam,pHam)
 
-def classify(probTable,pSpam,pHam,example,lookup):
+def classify(probTable,pSpam,pHam,example):
 	
-	for item in lookup:
-		if item in example:
-			if example[item] > len(probTable[item]['spam']):
-				pSpam = pSpam * probTable[item]['spam'][-1]
-				pHam = pHam * probTable[item]['ham'][-1]
+	for i in range(len(probTable)):
+		if example[i] != 0:
+			if example[i] > len(probTable[i]['spam']):
+				pSpam = pSpam * probTable[i]['spam'][-1]
+				pHam = pHam * probTable[i]['ham'][-1]
 			else:
-				pSpam = pSpam * probTable[item]['spam'][example[item]-1]
-				pHam = pHam * probTable[item]['ham'][example[item]-1]
+				pSpam = pSpam * probTable[i]['spam'][example[i]-1]
+				pHam = pHam * probTable[i]['ham'][example[i]-1]
 		else:
-			pSpam = pSpam * (1-sum(probTable[item]['spam']))
-			pHam = pHam * (1-sum(probTable[item]['ham']))
+			pSpam = pSpam * (1-sum(probTable[i]['spam']))
+			pHam = pHam * (1-sum(probTable[i]['ham']))
 
 	if pHam >= pSpam:
 		return "ham"

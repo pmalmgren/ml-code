@@ -9,6 +9,7 @@ and vectors from a corpus given a vocabulary.
 
 from operator import itemgetter
 import re
+import numpy as np
 
 """
 Given a corpus returns features,
@@ -55,7 +56,7 @@ def vectorize(corpus, wordDict):
     for item in corpus:
         if len(item) == 0:
             continue
-        feats = dict()
+        feats = np.zeros((len(wordDict),),dtype=np.int)
         item = item.split('\t')
         tag = item[0]
         text = item[1]
@@ -66,10 +67,11 @@ def vectorize(corpus, wordDict):
 
         for word in text.split():
             if word in wordDict:
-                if word in feats:
-                    feats[word] = feats[word] + 1
-                else:
-                    feats[word] = 1
+				ind = wordDict.index(word)
+				if word in feats:
+					feats[ind] = feats[ind] + 1
+				else:
+					feats[ind] = 1
                 # end if word in feats
             # end if word in dictionary
         # end for word in text

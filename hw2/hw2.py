@@ -9,6 +9,7 @@ import textFeatures
 import random
 import pickle
 import time
+import numpy as np
 
 def main():
 	with open('data/SMSSpamCollection') as input_file:
@@ -43,7 +44,7 @@ def main():
 		# remove n most frequent words
 		
 		for cutoff in stopWords:
-			wordDict = set([baseDict[i][0] for i in range(0,len(baseDict)-cutoff)])	
+			wordDict = [baseDict[i][0] for i in range(0,len(baseDict)-cutoff)]	
 			tp = 0
 			fp = 0
 			tn = 0
@@ -58,14 +59,14 @@ def main():
 
 			for item in testSpam:
 				start = time.clock()
-				prediction = (bayes.classify(probTable,pSpam,pHam,item,wordDict))
+				prediction = (bayes.classify(probTable,pSpam,pHam,item))
 				print "Test: %f" % (time.clock() - start)
 				if prediction == 'spam':
 					tp = tp + 1
 				else:
 					fn = fn + 1
 			for item in testHam:
-				prediction = (bayes.classify(probTable,pSpam,pHam,item,wordDict))
+				prediction = (bayes.classify(probTable,pSpam,pHam,item))
 				if prediction == 'ham':
 					tn = tn + 1
 				else:
