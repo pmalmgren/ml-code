@@ -16,16 +16,16 @@ def main():
 	text = text.split('\n')
 
 	# stop word cutoffs as per assignment
-	stopWords = [10,25,50,100,500]
+	stopWords = [0]
 
 	# xSlice our data into five equal segments for fivefold cross validation
 	# each segment has random indices
 	indices = random.sample(xrange(len(text)),len(text))
 	randomData = [text[i] for i in indices]
 	stride = len(randomData)/5
-	randomxSlices = [[],[],[],[],[]]
+	randomSlices = [[],[],[],[],[]]
 	for i in range(1,len(randomData)-1,stride+1):
-		randomxSlices[i/stride] = (randomData[i-1:i+stride-1]) 	
+		randomSlices[i/stride] = (randomData[i-1:i+stride-1]) 	
 	
 	# iterate through all the xSlices and perform training/classification
 	for xSlice in range(5):
