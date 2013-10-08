@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python2
 """
 Homework Assignment #2
 
@@ -69,7 +70,7 @@ def trainClassifier(spam,ham,wordDict):
 def classify(probTable,pSpam,pHam,example):
 	
 	for item in probTable:
-		if item in example.keys():
+		if item in example:
 			if example[item] > len(probTable[item]['spam']):
 				pSpam = pSpam * probTable[item]['spam'][-1]
 				pHam = pHam * probTable[item]['ham'][-1]

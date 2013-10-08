@@ -2,7 +2,7 @@
 """
 Homework Assignment #2
 
-Main file
+Experiment file
 """
 import bayes
 import textFeatures
