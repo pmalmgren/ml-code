@@ -26,12 +26,13 @@ def getFeatures(corpus):
             continue
         item = item.split('\t')
         text = item[1]
-        # sanitize the text        
+        # sanitize the text
         text = sanitize.sub(' ',text)
         text = text.strip()
         text = text.lower()
+        text = text.split()
 
-        for word in text.split():
+        for word in zip(text,text[1:]):
             if word in wordDict:
                 wordDict[word] = wordDict[word] + 1
             else:
@@ -39,7 +40,7 @@ def getFeatures(corpus):
         # end for word
     # end for item
 
-    # sort by frequency for convenience   
+    # sort by frequency for convenience
     return sorted(wordDict.items(), key=itemgetter(1))
 
 """
@@ -59,12 +60,13 @@ def vectorize(corpus, wordDict):
         item = item.split('\t')
         tag = item[0]
         text = item[1]
-        # sanitize the text        
         text = sanitize.sub(' ',text)
         text = text.strip()
         text = text.lower()
+        text = text.split()
 
-        for word in text.split():
+        for bigram in zip(text,text[1:]):
+            word = bigram[0] + ',' + bigram[1]
             if word in wordDict:
                 if word in feats:
                     feats[word] = feats[word] + 1
