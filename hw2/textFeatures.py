@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 03 11:08:06 2013
+Homework Assignment #2
 
-@author: ptmalmyr
+This file contains functions to build a vocabulary from a corpus,
+and vectors from a corpus given a vocabulary.
+
 """
 
 from operator import itemgetter
-import numpy as np
 import re
 
 """
@@ -19,16 +20,17 @@ def getFeatures(corpus):
     # regular expression to remove non-alphabetic characters
     sanitize = re.compile('[\W0-9]')
     wordDict = dict()
-    
+
     for item in corpus:
+        if len(item) == 0:
+            continue
         item = item.split('\t')
         text = item[1]
         # sanitize the text        
-        text = text.replace('\n','')
         text = sanitize.sub(' ',text)
         text = text.strip()
         text = text.lower()
-        
+
         for word in text.split():
             if word in wordDict:
                 wordDict[word] = wordDict[word] + 1
@@ -36,7 +38,7 @@ def getFeatures(corpus):
                 wordDict[word] = 1
         # end for word
     # end for item
-    
+
     # sort by frequency for convenience   
     return sorted(wordDict.items(), key=itemgetter(1))
 
@@ -44,21 +46,40 @@ def getFeatures(corpus):
 Given a corpus and a word dictionary,
 compute a feature vector for each example class
 """
-def vectorize(corpus, words):
+def vectorize(corpus, wordDict):
     sanitize = re.compile('[\W0-9]')
-    
+
     spam = []
     ham = []
-    
+
     for item in corpus:
+        if len(item) == 0:
+            continue
+        feats = dict()
         item = item.split('\t')
         tag = item[0]
         text = item[1]
         # sanitize the text        
-        text = text.replace('\n','')
         text = sanitize.sub(' ',text)
         text = text.strip()
         text = text.lower()
-        
-        
-        
+
+        for word in text.split():
+            if word in wordDict:
+                if word in feats:
+                    feats[word] = feats[word] + 1
+                else:
+                    feats[word] = 1
+                # end if word in feats
+            # end if word in dictionary
+        # end for word in text
+
+        if tag == 'ham':
+            ham.append(feats)
+        elif tag == 'spam':
+            spam.append(feats)
+        else:
+            print "Error: %s" % (tag)
+    # end for item in corpus
+
+    return (spam,ham)
