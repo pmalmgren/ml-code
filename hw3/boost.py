@@ -5,12 +5,15 @@ Contains definitions for boosting
 """
 
 import numpy as np
+import random
 
 class BoostModel(object):
     # either a dict of perceptrons or stumps paired with alpha values
         
     model = list()
     model_type = ''
+    perceptrons = None
+    perceptron_stumps = None
     stumps = None
     inverse_stumps = None
     
@@ -23,14 +26,52 @@ class BoostModel(object):
             self.model_type = 'stump'
             
     
-    # trains a model using adaptive boosting
+    # trains a model using adaptive boosting w/ perceptrons
+
+    def train_perceptron(self,x_train,y_train,x_validate,y_validate):
+        self.build_perceptrons(x_train,y_train,100,.2)
+        terminate = False
+        H = np.zeros((np.shape(y_validate)[0],),dtype=np.float)
+        w = np.ones((np.shape(y_train)[0],),dtype=np.float)
+        w = w / sum(w)
+        # smoothing constant to ensure we don't divide by 0
+        epsilon = 1e-6
+        # validation accuracy so we know when to stop
+        validate = list()        
+        count = 0   
+        
+        while terminate is False:
+            h,acc,best_stump = self.choose_perceptron(w,y_train)
+            alpha = .5 * np.log((acc + epsilon)/((1 - acc) + epsilon))
+            best_stump['alpha'] = alpha
+            self.model.append(best_stump)
+            # weight update + normalize            
+            w = w * (np.e**-(alpha*y_train*h))
+            w = w / sum(w)
+            h,throwaway = self.eval_perceptron(x_validate,y_validate,self.perceptrons[best_stump['ind']],True)
+            H = H + h*alpha
+            
+            perf = (np.sign(H) == y_validate).astype(np.float)
+            
+            validate.append(np.int(np.float(sum(perf)/np.float(len(perf))) * 100))
+            if len(validate) > 1:
+                if validate[-1] <= validate[-2]:
+                    count = count + 1
+                else:
+                    count = 0
+            
+            if count == 10:
+                terminate = True
+                self.model = self.model[0:-10]           
+            
+            
+    # trains a model using adaptive boosting w/ stumps
        
-    def train(self,x_train,y_train,x_validate,y_validate):
-        if self.model_type == 'stump' or self.model_type == 'both':
-            self.build_stumps(x_train,y_train)
+    def train_stump(self,x_train,y_train,x_validate,y_validate):
+        self.build_stumps(x_train,y_train)
         
         terminate = False
-        H = np.zeros((np.shape(y_validate)[0]),dtype=np.float)
+        H = np.zeros((np.shape(y_validate)[0],),dtype=np.float)
         w = np.ones((np.shape(y_train)[0],),dtype=np.float)
         w = w / sum(w)
         # smoothing constant to ensure we don't divide by 0
@@ -53,8 +94,6 @@ class BoostModel(object):
             H[positive] = H[positive] + alpha
             H[negative] = H[negative] - alpha
             perf = (np.sign(H) == y_validate).astype(np.float)
-            print "%.5f" % (sum(perf)/len(perf))
-            print "Best index: %d Democrat = %d Acc of stump: %.5f" % (best_stump['ind'],best_stump['pos'],acc)
             
             validate.append(np.int(np.float(sum(perf)/np.float(len(perf))) * 100))
             if len(validate) > 1:
@@ -71,12 +110,47 @@ class BoostModel(object):
             
     # end train()
    
-    # trains perceptrons
+    # trains a 'pile' of perceptrons
+    # n is the number of perceptrons to train
+    # ata is the learning rate    
     
-    def perceptron(self,x,y):
-        print ""    
-    
-   
+    def build_perceptrons(self,x,y,n,eta):
+        self.perceptron_stumps = np.zeros((n,np.shape(x)[1]),dtype=np.int)
+        self.perceptrons = list()
+        
+        for xPerceptron in range(n):
+            w = np.zeros((16,),dtype=np.float)
+            w[:] = [random.uniform(-2,2) for i in range(16)]
+            b = -1
+            num_attempts = 0
+            # randomly initialized weights could have accuracy > 50%            
+            h,acc = self.eval_perceptron(x,y,w,True)
+            while acc < .5 and num_attempts < 10:
+                for item in np.where(h != y):
+                    w = w + eta*((y[0]-h[0])*x[:,item[0]])
+                num_attempts = num_attempts + 1
+                h,acc = self.eval_perceptron(x,y,w,True)
+                
+            self.perceptron_stumps[xPerceptron,:] = h
+            self.perceptrons.append(w)            
+ 
+    def choose_perceptron(self,w,y):
+        acc_max = 0
+        best_stump = dict()
+        
+        for i in range(np.shape(self.perceptron_stumps)[0]):            
+            # consider the stump and it's opposite            
+            perf = y * self.perceptron_stumps[i,:]
+            perf[np.where(perf == -1)] = 0
+            acc_stump = np.dot(perf,w)
+
+            if acc_stump > acc_max:
+                h = self.perceptron_stumps[i,:]
+                acc_max = acc_stump
+                best_stump['ind'] = i
+        
+        return (h,acc_max,best_stump)
+  
     def choose_stump(self,w,y):
         acc_max = 0
         best_stump = dict()
@@ -124,23 +198,40 @@ class BoostModel(object):
     # evalutes a particular perceptron (defined as a lambda function) for training
     # data             
     
-    def eval_perceptron(self,perceptron,x,y):
-        print ""
+    def eval_perceptron(self,x,y,w,return_h):
+        perceptron = lambda w,b,x: np.sign(np.dot(w,x)+b)
+        h = np.zeros((np.shape(x)[1],),dtype=np.int)
+
+        for j in range(np.shape(x)[1]):
+            h[j] = np.sign(perceptron(w,-1,x[:,j]))
+
+        result = (h == y).astype(int)
         
+        if return_h:
+            return (h,float(sum(result) / len(result)))
+        else:
+            return float(sum(result) / len(result))
     # end eval_perceptron()
     
     
     # evalutes novel examples
        
     def evaluate(self,x,y):
-        H = np.zeros((np.shape(y)[0]),dtype=np.float)
-        for stump in self.model:
-            positive = np.where(x[stump['ind'],:] == stump['pos'])
-            negative = np.where(x[stump['ind'],:] == stump['neg'])            
-            H[positive] = H[positive] + stump['alpha']
-            H[negative] = H[negative] - stump['alpha']
-        
-        perf = (np.sign(H) == y).astype(np.float)        
+        if self.model_type == 'stump':        
+            H = np.zeros((np.shape(y)[0]),dtype=np.float)
+            for learner in self.model:
+                positive = np.where(x[learner['ind'],:] == learner['pos'])
+                negative = np.where(x[learner['ind'],:] == learner['neg'])            
+                H[positive] = H[positive] + learner['alpha']
+                H[negative] = H[negative] - learner['alpha']
+            
+            perf = (np.sign(H) == y).astype(np.float)  
+        if self.model_type == 'perceptron':
+            H = np.zeros((np.shape(y)[0]),dtype=np.float)
+            for learner in self.model:
+                h,throwaway = self.eval_perceptron(x,y,self.perceptrons[learner['ind']],True)
+                H = H + h*learner['alpha']
+            perf = (np.sign(H) == y).astype(np.float)
         return float(sum(perf)/len(perf))   
         
     # end evaluate()

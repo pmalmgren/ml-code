@@ -57,8 +57,8 @@ def main():
     y_train = labels[randomInds[fourth*2:]]
     
     # train a model with a stump, perceptron, or both.
-    myclassifier = boost.BoostModel('stump')
-    myclassifier.train(x_train,y_train,x_validate,y_validate)
+    myclassifier = boost.BoostModel('perceptron')
+    myclassifier.train_perceptron(x_train,y_train,x_validate,y_validate)
     print myclassifier.evaluate(x_test,y_test)    
     
 if __name__ == '__main__':
