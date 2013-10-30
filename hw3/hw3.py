@@ -9,7 +9,7 @@ relevant statistics.
 
 import numpy as np
 import random
-import boost
+from boost import *
 
 def vectorize(data):
     vectorizedData = np.zeros((16,len(data)),dtype=np.float)    
@@ -45,21 +45,44 @@ def main():
         raw_data = data_file.read()
     raw_data = raw_data.strip()
     raw_data = raw_data.split('\n')
-    
     labels,vectorData = vectorize(raw_data)
-    randomInds = random.sample(range(len(raw_data)),len(raw_data))
-    fourth = int(len(raw_data)/4)
-    x_test = vectorData[:,randomInds[0:fourth]]
-    y_test = labels[randomInds[0:fourth]]
-    x_validate = vectorData[:,randomInds[fourth:fourth*2]]
-    y_validate = labels[randomInds[fourth:fourth*2]]
-    x_train = vectorData[:,randomInds[fourth*2:]]
-    y_train = labels[randomInds[fourth*2:]]
+    perceptronAcc = np.zeros((10,),dtype=np.float)
+    stumpAcc = np.zeros((10,),dtype=np.float)
+    for i in range(10):    
+        randomInds = random.sample(range(len(raw_data)),len(raw_data))
+        fourth = int(len(raw_data)/4)    
+        # train a model with a perceptron
+        classifier = BoostModel('perceptron')
+        classifier.train_perceptron(vectorData[:,randomInds[fourth*2:]],
+                                    labels[randomInds[fourth*2:]],
+                                    vectorData[:,randomInds[fourth:fourth*2]],
+                                    labels[randomInds[fourth:fourth*2]])
+        perceptronAcc[i] = classifier.evaluate(vectorData[:,randomInds[0:fourth]],
+                                                labels[randomInds[0:fourth]])
+        del classifier
+        
+    print "PERCEPTRON ACCURACY:"
+    print perceptronAcc
+    print "Average Error: %.4f +/- %.4f" % (np.mean(perceptronAcc),np.var(perceptronAcc))
+    print "Max Error: %.4f Min Error: %.4f" % (np.max(perceptronAcc),np.min(perceptronAcc))
     
-    # train a model with a stump, perceptron, or both.
-    myclassifier = boost.BoostModel('perceptron')
-    myclassifier.train_perceptron(x_train,y_train,x_validate,y_validate)
-    print myclassifier.evaluate(x_test,y_test)    
+    
+    for i in range(10):
+        randomInds = random.sample(range(len(raw_data)),len(raw_data))
+        fourth = int(len(raw_data)/4)    
+        # train a model with a stump
+        boostclassifier = BoostModel('stump')        
+        boostclassifier.train_stump(vectorData[:,randomInds[fourth*2:]],
+                                    labels[randomInds[fourth*2:]],
+                                    vectorData[:,randomInds[fourth:fourth*2]],
+                                    labels[randomInds[fourth:fourth*2]])
+        stumpAcc[i] = boostclassifier.evaluate(vectorData[:,randomInds[0:fourth]],
+                                                labels[randomInds[0:fourth]])
+        del boostclassifier
+    print "STUMP ACCURACY:"
+    print stumpAcc
+    print "Average Error: %.4f +/- %.4f" % (np.mean(stumpAcc),np.var(stumpAcc))
+    print "Max Error: %.4f Min Error: %.4f" % (np.max(stumpAcc),np.min(stumpAcc))
     
 if __name__ == '__main__':
     main()
