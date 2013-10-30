@@ -33,9 +33,9 @@ def vectorize(data):
             else:
                 vector[j] = -1
         
-        print vector
+        
         vectorizedData[:,i] = vector
-        print vectorizedData[:,i]
+        
         
     return labels,vectorizedData
     
@@ -48,6 +48,7 @@ def main():
     labels,vectorData = vectorize(raw_data)
     perceptronAcc = np.zeros((10,),dtype=np.float)
     stumpAcc = np.zeros((10,),dtype=np.float)
+    bothAcc = np.zeros((10,),dtype=np.float)
     for i in range(10):    
         randomInds = random.sample(range(len(raw_data)),len(raw_data))
         fourth = int(len(raw_data)/4)    
@@ -83,6 +84,24 @@ def main():
     print stumpAcc
     print "Average Error: %.4f +/- %.4f" % (np.mean(stumpAcc),np.var(stumpAcc))
     print "Max Error: %.4f Min Error: %.4f" % (np.max(stumpAcc),np.min(stumpAcc))
+    
+    for i in range(10):    
+        randomInds = random.sample(range(len(raw_data)),len(raw_data))
+        fourth = int(len(raw_data)/4)    
+        # train a model with a perceptron
+        classifier = BoostModel('both')
+        classifier.train_both(vectorData[:,randomInds[fourth*2:]],
+                                    labels[randomInds[fourth*2:]],
+                                    vectorData[:,randomInds[fourth:fourth*2]],
+                                    labels[randomInds[fourth:fourth*2]])
+        bothAcc[i] = classifier.evaluate(vectorData[:,randomInds[0:fourth]],
+                                                labels[randomInds[0:fourth]])
+        del classifier
+        
+    print "BOTH ACCURACY:"
+    print bothAcc
+    print "Average Error: %.4f +/- %.4f" % (np.mean(bothAcc),np.var(bothAcc))
+    print "Max Error: %.4f Min Error: %.4f" % (np.max(bothAcc),np.min(bothAcc))
     
 if __name__ == '__main__':
     main()

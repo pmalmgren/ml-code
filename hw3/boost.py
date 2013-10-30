@@ -10,6 +10,7 @@ import random
 class BoostModel(object):  
     stump_model = list()
     percep_model = list()
+    both_model = list()
     model_type = ''
     perceptrons = None
     perceptron_stumps = None
@@ -24,7 +25,59 @@ class BoostModel(object):
             print "Assertion Error. Model type must be stump, perceptron, or both. Defaulting to stump."
             self.model_type = 'stump'
             
-    
+    def train_both(self,x_train,y_train,x_validate,y_validate):
+        self.build_perceptrons(x_train,y_train,100,.2)
+        self.build_stumps(x_train,y_train)
+        terminate = False
+        H = np.zeros((np.shape(y_validate)[0],),dtype=np.float)
+        w = np.ones((np.shape(y_train)[0],),dtype=np.float)
+        w = w / sum(w)
+        # smoothing constant to ensure we don't divide by 0
+        epsilon = 1e-6
+        # validation accuracy so we know when to stop
+        validate = list()        
+        count = 0   
+        
+        while terminate is False:
+            p_h,p_acc,p_best_stump = self.choose_perceptron(w,y_train)
+            s_h,s_acc,s_best_stump = self.choose_stump(w,y_train)
+            if p_acc > s_acc:
+                acc = p_acc
+                h = p_h
+                best_stump = p_best_stump
+                best_stump['type'] = 'perceptron'
+            else:
+                acc = s_acc
+                h = s_h
+                best_stump = s_best_stump
+                best_stump['type'] = 'stump'
+                
+            alpha = .5 * np.log((acc + epsilon)/((1 - acc) + epsilon))
+            best_stump['alpha'] = alpha
+            self.both_model.append(best_stump)
+            # weight update + normalize            
+            w = w * (np.e**-(alpha*y_train*h))
+            w = w / sum(w)
+            if best_stump['type'] == 'perceptron':
+                h,throwaway = self.eval_perceptron(x_validate,y_validate,self.perceptrons[best_stump['ind']],True)
+                H = H + h*alpha
+            else:
+                positive = np.where(x_validate[best_stump['ind'],:] == best_stump['pos'])            
+                negative = np.where(x_validate[best_stump['ind'],:] == best_stump['neg'])            
+                H[positive] = H[positive] + alpha
+                H[negative] = H[negative] - alpha
+            
+            perf = (np.sign(H) == y_validate).astype(np.float)
+            validate.append(np.int(np.float(sum(perf)/np.float(len(perf))) * 100))
+            if len(validate) > 1:
+                if validate[-1] <= validate[-2]:
+                    count = count + 1
+                else:
+                    count = 0
+            
+            if count == 10:
+                terminate = True
+                self.both_model = self.both_model[0:-10]
     # trains a model using adaptive boosting w/ perceptrons
 
     def train_perceptron(self,x_train,y_train,x_validate,y_validate):
@@ -233,26 +286,35 @@ class BoostModel(object):
     # evalutes novel examples
        
     def evaluate(self,x,y):
+        H = np.zeros((np.shape(y)[0]),dtype=np.float)
         if self.model_type == 'stump':        
-            H = np.zeros((np.shape(y)[0]),dtype=np.float)
             for learner in self.stump_model:
-                try:                
-                    positive = np.where(x[learner['ind'],:] == learner['pos'])
-                    negative = np.where(x[learner['ind'],:] == learner['neg'])            
-                    H[positive] = H[positive] + learner['alpha']
-                    H[negative] = H[negative] - learner['alpha']
-                except:
-                    
-                    print self.model_type
-                    
-            
-            perf = (np.sign(H) == y).astype(np.float)  
+                positive = np.where(x[learner['ind'],:] == learner['pos'])
+                negative = np.where(x[learner['ind'],:] == learner['neg'])            
+                H[positive] = H[positive] + learner['alpha']
+                H[negative] = H[negative] - learner['alpha']
+                      
         elif self.model_type == 'perceptron':
-            H = np.zeros((np.shape(y)[0]),dtype=np.float)
             for learner in self.percep_model:
                 h,throwaway = self.eval_perceptron(x,y,self.perceptrons[learner['ind']],True)
                 H = H + learner['flip']*h*learner['alpha']
-            perf = (np.sign(H) == y).astype(np.float)
+              
+        elif self.model_type == 'both':
+            numPerceptrons = 0
+            numStumps = 0
+            for learner in self.both_model:
+                
+                if learner['type'] == 'perceptron':
+                    numPerceptrons = numPerceptrons + 1
+                    h,throwaway = self.eval_perceptron(x,y,self.perceptrons[learner['ind']],True)
+                    H = H + learner['flip']*h*learner['alpha']
+                else:
+                    numStumps = numStumps + 1
+                    positive = np.where(x[learner['ind'],:] == learner['pos'])
+                    negative = np.where(x[learner['ind'],:] == learner['neg'])            
+                    H[positive] = H[positive] + learner['alpha']
+                    H[negative] = H[negative] - learner['alpha']  
+        perf = (np.sign(H) == y).astype(np.float)
         return float(sum(perf)/len(perf))   
         
     # end evaluate()
