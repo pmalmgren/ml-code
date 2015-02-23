@@ -1,87 +1,74 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python2
 """
 Homework Assignment #2
 
-This file contains the Bayes classifier functions
-One computes the conditional probabilities
-The other accepts novel examples and returns a prediction
-wordDict 
+Experiment file
 """
-from scipy.stats import itemfreq
-import numpy as np
+import bayes
+import textFeatures
+import random
+import pickle
 
-def trainClassifier(spam,ham,wordDict):
-	vPrior = lambda nc,n,p: (nc + 1/p)/(n+1)
+def main():
+	with open('data/SMSSpamCollection') as input_file:
+		text = input_file.read()
+	text = text.strip()
+	text = text.split('\n')
 
-	pSpam = float(len(spam))/(len(spam)+len(ham))
-	pHam = float(len(ham))/(len(ham)+len(spam))
+	# stop word cutoffs as per assignment
+	stopWords = [0]
 
-	spamTable = dict()
-	hamTable = dict() 
+	# xSlice our data into five equal segments for fivefold cross validation
+	# each segment has random indices
+	indices = random.sample(xrange(len(text)),len(text))
+	randomData = [text[i] for i in indices]
+	stride = len(randomData)/5
+	randomSlices = [[],[],[],[],[]]
+	for i in range(1,len(randomData)-1,stride+1):
+		randomSlices[i/stride] = (randomData[i-1:i+stride-1]) 	
 	
-	# because occurences of words in documents may form a distribution
-	for item in wordDict:
-		spamTable[item] = list()
-		hamTable[item] = list()
-
-	# for each word that occurs, build a list of each document it occured in
-	# len(list) = number of documents the word appeared in
-	# sum(list) = number of occurrences of the word in total (irrelevant)
-	
-	for example in spam:
-		for feature in example.keys():
-			spamTable[feature].append(example[feature])
-
-	for example in ham:
-		for feature in example.keys():
-			hamTable[feature].append(example[feature])	
-
-	# assume each word is equally likely
-	p = float(len(wordDict))
-	
-	probTable = dict()
-
-	for word in wordDict:
-		probTable[word] = dict()
-		
-		if len(spamTable[word]) == 0: 
-			spamBins = vPrior(np.zeros(np.shape(itemfreq(hamTable[word])[:,1]),dtype=np.float),float(len(spam)),p)
-			hamBins = vPrior(itemfreq(hamTable[word])[:,1],float(len(ham)),p)
-		elif len(hamTable[word]) == 0:
-			hamBins = vPrior(np.zeros(np.shape(itemfreq(spamTable[word])[:,1]),dtype=np.float),float(len(ham)),p)
-			spamBins = vPrior(itemfreq(spamTable[word])[:,1],float(len(spam)),p)
-		else:
-			spamFreq = itemfreq(spamTable[word])
-			hamFreq = itemfreq(hamTable[word])
-			binLength = max(len(spamFreq),len(hamFreq))
-			hamBins = np.zeros((binLength,),dtype=np.float)
-			spamBins = np.zeros((binLength,),dtype=np.float)
-			hamBins[0:len(hamFreq)] = hamFreq[:,1]
-			spamBins[0:len(spamFreq)] = spamFreq[:,1]
-			hamBins = vPrior(hamBins,float(len(ham)),p)
-			spamBins = vPrior(spamBins,float(len(spam)),p)	
-
-		probTable[word]['spam'] = spamBins
-		probTable[word]['ham'] = hamBins
-		
-	return (probTable,pSpam,pHam)
-
-def classify(probTable,pSpam,pHam,example):
-	
-	for item in probTable:
-		if item in example:
-			if example[item] > len(probTable[item]['spam']):
-				pSpam = pSpam * probTable[item]['spam'][-1]
-				pHam = pHam * probTable[item]['ham'][-1]
+	# iterate through all the xSlices and perform training/classification
+	for xSlice in range(5):
+		trainSet = list()
+		testSet = randomSlices[xSlice]
+		for i in range(5):
+			if i == xSlice:
+				continue
 			else:
-				pSpam = pSpam * probTable[item]['spam'][example[item]-1]
-				pHam = pHam * probTable[item]['ham'][example[item]-1]
-		else:
-			pSpam = pSpam * (1-sum(probTable[item]['spam']))
-			pHam = pHam * (1-sum(probTable[item]['ham']))
+				trainSet = trainSet + randomSlices[i]
 
-	if pHam >= pSpam:
-		return "ham"
-	else:
-		return "spam"
+		baseDict = textFeatures.getFeatures(trainSet)
+	
+		# remove n most frequent words
+		
+		for cutoff in stopWords:
+			wordDict = set([baseDict[i][0] for i in range(0,len(baseDict)-cutoff)])	
+			tp = 0
+			fp = 0
+			tn = 0
+			fn = 0	
+			# build feature vectors (not really, they're hash tables)
+			trainSpam,trainHam = textFeatures.vectorize(trainSet,wordDict)
+			testSpam,testHam = textFeatures.vectorize(testSet,wordDict)
+   
+			probTable,pSpam,pHam = bayes.trainClassifier(trainSpam,trainHam,wordDict)	
+
+			for item in testSpam:
+				prediction = (bayes.classify(probTable,pSpam,pHam,item))
+				if prediction == 'spam':
+					tp = tp + 1
+				else:
+					fn = fn + 1
+			for item in testHam:
+				prediction = (bayes.classify(probTable,pSpam,pHam,item))
+				if prediction == 'ham':
+					tn = tn + 1
+				else:
+					fp = fp + 1
+			
+			result = {'tp': tp, 'fp': fp, fn: 'fn', 'tn': tn}
+			# write results to temporary file
+			fName = 'output/expcutoff%dxSlice%d' % (cutoff,xSlice)
+			pickle.dump(result,open(fName,'w'))
+if __name__ == '__main__':
+	main()
