@@ -10,13 +10,9 @@ matplotlib - https://www.matplotlib.org/
 
 === Key files ===
 * knn.py
-	All the code required for the assignment
 	main() will load the data and run all classification algorithms
 * exp.py
-	Contains older (and more ad-hoc) version of assignment code
-	Produces figures/data for the report
-* report.pdf
-	Report as per asignment requirements
+	Contains older code
 * confmatrix.pdf
 	Contains confusion matrices for all experiments
 * expdata.txt
